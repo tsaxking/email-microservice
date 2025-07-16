@@ -1,0 +1,86 @@
+name: 'Merge Template'
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+
+  merge-template:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        templates: [
+            "tsaxking/file-microservice",
+            "tsaxking/uuid-microservice",
+            "tsaxking/email-microservice",
+            "tsaxking/discord-bot-microservice"
+        ]
+
+    steps:
+      - name: Retrieve git dependencies
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Checkout everything to get access to the tags
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: 'Setup ssh-agent'
+        uses: 'webfactory/ssh-agent@v0.5.0'
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: v22.12.0
+
+      - name: 'Installing dependencies'
+        run: |
+          pnpm i
+
+      - name: 'Converting Readme'
+        run: |
+          pnpm fix-readme ${{ matrix.templates }}
+          rm -rf ./scripts/fix-readme.ts
+
+      - name: Send pull-request
+        run: |
+          echo "Creating variables"
+          LATEST_TAG=$(git describe --tags --always --abbrev=0)
+          LAST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          REPOSITORY="${{ matrix.templates }}"
+          BRANCH_NAME="chore-update-scripts-to-$LATEST_TAG"
+          CLONE_DIR="target-repo"
+
+          echo "Cloning target repo"
+          git clone git@github.com:$REPOSITORY.git $CLONE_DIR
+          cd $CLONE_DIR
+
+          echo "Configuring Git"
+          git config user.email "taylorking206@u.boisestate.edu"
+          git config user.name "Sveltekit Bot"
+
+          echo "Creating new branch from default branch"
+          git checkout main
+          git pull origin main
+          git checkout -b "$BRANCH_NAME"
+
+          echo "Copying changes from template repo"
+          # Assuming the GHA starts in the template repo root
+          cp -r ../* .    # Don't overwrite .git
+          rm -rf .git .github/workflows/merge-template.yaml .github/workflows/docs.yaml
+
+          echo "Committing and pushing changes"
+          git add .
+          git commit -m "chore: update scripts to $LATEST_TAG" || echo "No changes to commit"
+          git push origin "$BRANCH_NAME"
