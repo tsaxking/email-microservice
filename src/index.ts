@@ -1,25 +1,23 @@
-// index.js
-const { config } = require('dotenv');
-const { z } = require('zod');
-const { randomUUID } = require('crypto');
-const sgMail = require('@sendgrid/mail');
-const redis = require('redis');
-const sqlite3 = require('sqlite3').verbose();
-const { open } = require('sqlite');
-const express = require('express');
+import { config } from 'dotenv';
+import { z } from 'zod';
+import { randomUUID } from 'crypto';
+import sgMail from '@sendgrid/mail';
+import { createClient } from 'redis';
+import sqlite3 from 'sqlite3';
+import { open, Database } from 'sqlite';
+import express, { Request, Response } from 'express';
 
 config();
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
+sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 const requiredEnvVars = [
   'SENDGRID_API_KEY',
   'SENDGRID_FROM_EMAIL',
   'REDIS_NAME',
   'PROXY_DOMAIN',
-  'SERVER_PORT'
-];
+  'SERVER_PORT',
+] as const;
 
 for (const varName of requiredEnvVars) {
   if (!process.env[varName]) {
@@ -28,11 +26,13 @@ for (const varName of requiredEnvVars) {
 }
 
 const DB_PATH = './tracker.db';
-let db;
+let db: Database<sqlite3.Database, sqlite3.Statement>;
 
-/** Set up SQLite and tracked_links table */
 const initDb = async () => {
-  db = await open({ filename: DB_PATH, driver: sqlite3.Database });
+  db = await open({
+    filename: DB_PATH,
+    driver: sqlite3.Database,
+  });
 
   await db.exec(`
     CREATE TABLE IF NOT EXISTS tracked_links (
@@ -43,10 +43,8 @@ const initDb = async () => {
   `);
 };
 
-/** Replaces URLs in HTML with tracked redirect links */
-const trackLinks = async (html) => {
+const trackLinks = async (html: string): Promise<string> => {
   const urlRegex = /https?:\/\/[^\s"'<>]+/g;
-
   const matches = [...html.matchAll(urlRegex)];
 
   for (const match of matches) {
@@ -66,20 +64,28 @@ const trackLinks = async (html) => {
   return html;
 };
 
-/** Sends an email, with optional tracked HTML links */
-const sendEmail = async (message) => {
-  const parsed = z.object({
-    to: z.email(),
+type EmailMessage = {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+};
+
+const sendEmail = async (message: EmailMessage) => {
+  const schema = z.object({
+    to: z.string().email(),
     subject: z.string().min(1),
     text: z.string().min(1),
-    html: z.string().optional()
-  }).safeParse(message);
+    html: z.string().optional(),
+  });
+
+  const parsed = schema.safeParse(message);
 
   if (!parsed.success) {
     return {
       success: false,
       message: 'Invalid email message format',
-      errors: parsed.error.errors,
+      errors: parsed.error.issues,
     };
   }
 
@@ -92,14 +98,14 @@ const sendEmail = async (message) => {
   try {
     await sgMail.send({
       ...emailData,
-      from: process.env.SENDGRID_FROM_EMAIL || '',
+      from: process.env.SENDGRID_FROM_EMAIL!,
     });
 
     return {
       success: true,
       message: 'Email sent successfully',
     };
-  } catch (error) {
+  } catch (error: any) {
     return {
       success: false,
       message: `Failed to send email: ${error.message}`,
@@ -107,12 +113,11 @@ const sendEmail = async (message) => {
   }
 };
 
-/** Runs the Redis queue worker */
 const startWorker = async () => {
-  const client = redis.createClient();
+  const client = createClient();
   await client.connect();
 
-  const queueKey = process.env.REDIS_NAME || 'email_queue';
+  const queueKey = process.env.REDIS_NAME!;
   console.log(`Listening to Redis queue "${queueKey}"`);
 
   while (true) {
@@ -121,7 +126,7 @@ const startWorker = async () => {
       const job = res?.element;
       if (!job) continue;
 
-      let data;
+      let data: unknown;
       try {
         data = JSON.parse(job);
       } catch (err) {
@@ -129,7 +134,7 @@ const startWorker = async () => {
         continue;
       }
 
-      const result = await sendEmail(data);
+      const result = await sendEmail(data as EmailMessage);
 
       if (result.success) {
         console.log('✔', result.message);
@@ -138,32 +143,37 @@ const startWorker = async () => {
       }
     } catch (err) {
       console.error('Redis error:', err);
-      await new Promise(r => setTimeout(r, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 };
 
-/** Starts the Express redirect tracker server */
 const startServer = () => {
   const app = express();
 
-  app.get('/r/:id', async (req, res) => {
+  app.get('/r/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
-    const row = await db.get('SELECT url, clicks FROM tracked_links WHERE id = ?', id);
+    const row = await db.get<{ url: string; clicks: number }>(
+      'SELECT url, clicks FROM tracked_links WHERE id = ?',
+      id
+    );
 
     if (!row) return res.status(404).send('Link not found');
 
-    await db.run('UPDATE tracked_links SET clicks = ? WHERE id = ?', row.clicks + 1, id);
+    await db.run(
+      'UPDATE tracked_links SET clicks = ? WHERE id = ?',
+      row.clicks + 1,
+      id
+    );
     res.redirect(row.url);
   });
 
-  const PORT = process.env.SERVER_PORT || 3000;
+  const PORT = parseInt(process.env.SERVER_PORT || '3000', 10);
   app.listen(PORT, () => {
     console.log(`Tracker server running at http://localhost:${PORT}`);
   });
 };
 
-/** Boot everything */
 const main = async () => {
   await initDb();
   startServer();
