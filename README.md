@@ -1,1 +1,1 @@
-# email-microservice
+# boilerplate-microservice
