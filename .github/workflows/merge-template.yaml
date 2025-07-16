@@ -34,11 +34,6 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE }}
 
-      - name: 'Converting Readme'
-        run: |
-          pnpm fix-readme ${{ matrix.templates }}
-          rm -rf ./scripts/fix-readme.ts
-
       - name: Send pull-request
         run: |
           echo "Creating variables"
