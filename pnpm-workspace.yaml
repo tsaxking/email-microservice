@@ -1,3 +1,5 @@
 onlyBuiltDependencies:
+  - drizzle-struct
   - esbuild
+  - math
   - ts-utils
