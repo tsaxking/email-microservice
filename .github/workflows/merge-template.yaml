@@ -58,8 +58,9 @@ jobs:
 
           echo "Copying changes from template repo"
           # Assuming the GHA starts in the template repo root
-          cp -r ../* .    # Don't overwrite .git
-          rm -rf .git .github/workflows/merge-template.yaml .github/workflows/docs.yaml
+          # Use rsync to copy everything from parent dir except target-repo
+          rsync -av --exclude "target-repo" --exclude ".git" --exclude ".github/workflows/merge-template.yaml" --exclude ".github/workflows/docs.yaml" ../ ./
+
 
           echo "Committing and pushing changes"
           git add .
