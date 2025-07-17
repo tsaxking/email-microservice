@@ -6,7 +6,7 @@ import { createClient } from 'redis';
 import { attemptAsync, type ResultPromise, attempt, type Result } from 'ts-utils/check';
 import { EventEmitter } from 'ts-utils/event-emitter';
 import { z } from 'zod';
-import { uuid } from './uuid';
+import { v4 as u } from 'uuid';
 import type { Stream } from 'ts-utils/stream';
 import { sleep } from 'ts-utils/sleep';
 
@@ -15,6 +15,10 @@ const log = (...data: unknown[]) => {
 };
 
 export namespace Redis {
+	// Devs can reassign this to a different UUID generator if they want
+	// eslint-disable-next-line prefer-const
+	export let uuid = u;
+
 	export const REDIS_NAME = process.env.REDIS_NAME || 'default';
 	let messageId = -1;
 	export const clientId = uuid();
@@ -94,11 +98,11 @@ export namespace Redis {
 	export const disconnect = () => {
 		return attemptAsync(async () => {
 			if (_sub) {
-				await _sub.disconnect();
+				await _sub.destroy();
 				_sub = undefined;
 			}
 			if (_pub) {
-				await _pub.disconnect();
+				await _pub.destroy();
 				_pub = undefined;
 			}
 		});
@@ -139,7 +143,7 @@ export namespace Redis {
 		},
 		Name extends string
 	> {
-		public static services = new Map<string, ListeningService<any, any>>();
+		// public static services = new Map<string, ListeningService<any, any>>();
 
 		private readonly em = new EventEmitter<{
 			[K in keyof Events]: {
@@ -162,9 +166,6 @@ export namespace Redis {
 				console.warn(
 					`Service name "${name}" cannot be the same as the Redis instance name "${REDIS_NAME}".`
 				);
-			}
-			if (ListeningService.services.has(this.name)) {
-				throw new Error(`Service with name "${this.name}" already exists.`);
 			}
 
 			_sub?.subscribe('channel:' + this.name, (message: string) => {
@@ -193,7 +194,7 @@ export namespace Redis {
 				}
 			});
 
-			ListeningService.services.set(this.name, this);
+			// ListeningService.services.set(this.name, this);
 		}
 	}
 
@@ -584,9 +585,7 @@ export namespace Redis {
 		});
 	};
 
-	export const getPub = (): Result<
-		ReturnType<typeof createClient>
-	> => {
+	export const getPub = (): Result<ReturnType<typeof createClient>> => {
 		return attempt(() => {
 			if (!_pub) {
 				throw new Error('Redis publisher client is not initialized. Call connect() first.');
@@ -595,9 +594,7 @@ export namespace Redis {
 		});
 	};
 
-	export const getSub = (): Result<
-		ReturnType<typeof createClient>
-	> => {
+	export const getSub = (): Result<ReturnType<typeof createClient>> => {
 		return attempt(() => {
 			if (!_sub) {
 				throw new Error('Redis subscriber client is not initialized. Call connect() first.');
