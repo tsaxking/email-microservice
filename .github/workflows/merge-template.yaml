@@ -17,7 +17,8 @@ jobs:
             "tsaxking/file-microservice",
             "tsaxking/uuid-microservice",
             "tsaxking/email-microservice",
-            "tsaxking/discord-bot-microservice"
+            "tsaxking/discord-bot-microservice",
+            "tsaxking/ntp-microservice"
         ]
 
     steps:
