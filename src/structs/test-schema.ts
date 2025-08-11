@@ -112,7 +112,7 @@ export default async (build: 'true' | 'false' = 'true') => {
 		}
 
 		// check if there are extra columns in DB not defined in program
-		for (const [name, actual] of dbColMap.entries()) {
+		for (const [name, _actual] of dbColMap.entries()) {
 			if (!(toCamelCase(fromSnakeCase(name)) in columns)) {
 				console.warn(`[EXTRA COLUMN] ${tableName}.${name} exists in DB but not in program`);
 				success = false;
