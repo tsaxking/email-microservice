@@ -56,7 +56,7 @@ jobs:
           CLONE_DIR="target-repo"
 
           echo "Cloning target repo"
-          git clone git@github.com:$REPOSITORY.git $CLONE_DIR
+          git clone $REPOSITORY $CLONE_DIR
           cd $CLONE_DIR
 
           echo "Configuring Git"
