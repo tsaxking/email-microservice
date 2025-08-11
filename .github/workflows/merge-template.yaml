@@ -24,11 +24,11 @@ jobs:
       matrix:
         templates:
           [
-            'git@github.com:tsaxking/file-microservice',
-            'git@github.com:tsaxking/uuid-microservice',
-            'git@github.com:tsaxking/email-microservice',
-            'git@github.com:tsaxking/discord-bot-microservice',
-            'git@github.com:tsaxking/ntp-microservice',
+            'git@github.com:tsaxking/file-microservice.git',
+            'git@github.com:tsaxking/uuid-microservice.git',
+            'git@github.com:tsaxking/email-microservice.git',
+            'git@github.com:tsaxking/discord-bot-microservice.git',
+            'git@github.com:tsaxking/ntp-microservice.git',
           ]
 
 
