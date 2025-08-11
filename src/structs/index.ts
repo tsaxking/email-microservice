@@ -12,6 +12,5 @@
 //     });
 // }
 
-
 // For drizzle to view the table schema
 // export const _myStruct = Example.MyStruct.table;
