@@ -1,79 +1,9 @@
 import { config } from 'dotenv';
-import { z } from 'zod';
-import { randomUUID } from 'crypto';
-import sgMail from '@sendgrid/mail';
 import { createClient } from 'redis';
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
 import express, { Request, Response } from 'express';
+import { Emails } from './structs/emails';
 
 config();
-
-sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
-
-const requiredEnvVars = [
-  'SENDGRID_API_KEY',
-  'SENDGRID_FROM_EMAIL',
-  'REDIS_NAME',
-  'PROXY_DOMAIN',
-  'SERVER_PORT',
-] as const;
-
-for (const varName of requiredEnvVars) {
-  if (!process.env[varName]) {
-    throw new Error(`Missing required environment variable: ${varName}`);
-  }
-}
-
-const DB_PATH = './tracker.db';
-let db: Database<sqlite3.Database, sqlite3.Statement>;
-
-const initDb = async () => {
-  db = await open({
-    filename: DB_PATH,
-    driver: sqlite3.Database,
-  });
-
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS tracked_links (
-      id TEXT PRIMARY KEY,
-      url TEXT NOT NULL,
-      clicks INTEGER DEFAULT 0
-    );
-  `);
-
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS emails (
-      id TEXT PRIMARY KEY,
-      to_email TEXT NOT NULL,
-      subject TEXT NOT NULL,
-      text TEXT NOT NULL,
-      html TEXT,
-      created_at INTEGER NOT NULL
-    );
-  `);
-};
-
-const trackLinks = async (html: string): Promise<string> => {
-  const urlRegex = /https?:\/\/[^\s"'<>]+/g;
-  const matches = [...html.matchAll(urlRegex)];
-
-  for (const match of matches) {
-    const originalUrl = match[0];
-    const id = randomUUID();
-
-    await db.run(
-      'INSERT INTO tracked_links (id, url, clicks) VALUES (?, ?, 0)',
-      id,
-      originalUrl
-    );
-
-    const trackedUrl = `https://${process.env.PROXY_DOMAIN}/r/${id}`;
-    html = html.replaceAll(originalUrl, trackedUrl);
-  }
-
-  return html;
-};
 
 export type EmailMessage = {
   id: string;
@@ -81,89 +11,6 @@ export type EmailMessage = {
   subject: string;
   text: string;
   html?: string;
-};
-
-
-const sendEmail = async (message: EmailMessage) => {
-  const schema = z.object({
-    id: z.uuidv4(),
-    to: z.email(),
-    subject: z.string().min(1),
-    text: z.string().min(1),
-    html: z.string().optional(),
-  });
-
-  const parsed = schema.safeParse(message);
-
-  if (!parsed.success) {
-    return {
-      success: false,
-      message: 'Invalid email message format',
-      errors: parsed.error.issues,
-    };
-  }
-
-  let emailData = parsed.data;
-
-
-  if (emailData.html) {
-    emailData.html = await trackLinks(emailData.html);
-  }
-
-  // Save email to DB
-  try {
-    await db.run(
-      `INSERT INTO emails (id, to_email, subject, text, html, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      emailData.id,
-      emailData.to,
-      emailData.subject,
-      emailData.text,
-      emailData.html || null,
-      Date.now()
-    );
-  } catch (err) {
-    console.error('Failed to save email to DB:', err);
-    // You can decide whether to continue or fail here
-  }
-
-  try {
-    await sgMail.send({
-      ...emailData,
-      from: process.env.SENDGRID_FROM_EMAIL!,
-    });
-
-    // Publish success status to Redis
-    await client?.publish(
-      process.env.REDIS_NAME! + ':status',
-      JSON.stringify({
-        id: emailData.id,
-        status: 'success',
-      })
-    );
-
-    return {
-      success: true,
-      message: 'Email sent successfully',
-      id: emailData.id,
-    };
-  } catch (error: any) {
-    // Publish failure status to Redis
-    await client?.publish(
-      process.env.REDIS_NAME! + ':status',
-      JSON.stringify({
-        id: emailData.id,
-        status: 'failure',
-        error: error.message,
-      })
-    );
-
-    return {
-      success: false,
-      message: `Failed to send email: ${error.message}`,
-      id: emailData.id,
-    };
-  }
 };
 
 let client: ReturnType<typeof createClient> | null = null;
@@ -181,20 +28,19 @@ const startWorker = async () => {
       const job = res?.element;
       if (!job) continue;
 
-      let data: unknown;
-      try {
-        data = JSON.parse(job);
-      } catch (err) {
-        console.error('Invalid JSON in job:', err);
+      const parsed = Emails.parse(job);
+
+      if (parsed.isErr()) {
+        console.error('Failed to parse job:', parsed.error);
         continue;
       }
 
-      const result = await sendEmail(data as EmailMessage);
+      const result = await Emails.send(parsed.value);
 
-      if (result.success) {
-        console.log('✔', result.message);
+      if (result.isOk()) {
+        console.log('✔', result.value);
       } else {
-        console.error('✘', result.message);
+        console.error('✘', result.error);
       }
     } catch (err) {
       console.error('Redis error:', err);
@@ -207,20 +53,26 @@ const startServer = () => {
   const app = express();
 
   app.get('/r/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const row = await db.get<{ url: string; clicks: number }>(
-      'SELECT url, clicks FROM tracked_links WHERE id = ?',
-      id
-    );
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).send('Missing id parameter');
+    }
 
-    if (!row) return res.status(404).send('Link not found');
+    const data = await Emails.TrackedLinks.fromId(id);
 
-    await db.run(
-      'UPDATE tracked_links SET clicks = ? WHERE id = ?',
-      row.clicks + 1,
-      id
-    );
-    res.redirect(row.url);
+    if (data.isErr()) {
+      return res.status(404).send('Tracked link not found');
+    }
+
+    if (!data.value) {
+      return res.status(404).send('Tracked link not found');
+    }
+
+    await data.value.update({
+      clicks: data.value.data.clicks + 1,
+    });
+
+    res.redirect(data.value.data.url);
   });
 
   const PORT = parseInt(process.env.SERVER_PORT || '3000', 10);
@@ -230,7 +82,6 @@ const startServer = () => {
 };
 
 const main = async () => {
-  await initDb();
   startServer();
   startWorker();
 };
