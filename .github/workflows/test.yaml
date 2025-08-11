@@ -6,7 +6,22 @@ jobs:
   test-email-server:
     runs-on: ubuntu-latest
 
+    env:
+      SENDGRID_API_KEY: ${{ secrets.SENDGRID_API_KEY }}
+      SENDGRID_FROM_EMAIL: devsendgridtesting@gmail.com
+      REDIS_NAME: redis_testing
+      PROXY_DOMAIN: dev.tsaxking.com
+      SERVER_PORT: 5000
+
+    timeout-minutes: 5
+    services:
+      redis:
+        image: redis:latest
+        ports:
+          - 6379:6379
+
     steps:
+      
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -16,7 +31,9 @@ jobs:
           node-version: v22.12.0
 
       - name: Install pnpm
-        run: npm install -g pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - name: Install dependencies
         run: pnpm install
