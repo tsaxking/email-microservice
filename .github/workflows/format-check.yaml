@@ -6,6 +6,7 @@ on:
       - '*'
       - '!deploy'
       - '!gh-pages'
+  workflow_call:
 
 permissions:
   contents: read
