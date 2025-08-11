@@ -16,18 +16,18 @@ export default ts.config(
 		languageOptions: {
 			globals: {
 				...globals.browser,
-				...globals.node
-			}
-		}
+				...globals.node,
+			},
+		},
 	},
 	{
 		files: ['**/*.svelte'],
 
 		languageOptions: {
 			parserOptions: {
-				parser: ts.parser
-			}
-		}
+				parser: ts.parser,
+			},
+		},
 	},
 	{
 		rules: {
@@ -35,8 +35,8 @@ export default ts.config(
 			'@typescript-eslint/no-this-alias': 'off',
 			'@typescript-eslint/no-unused-vars': [
 				'warn',
-				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
-			]
-		}
-	}
+				{ argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+			],
+		},
+	},
 );

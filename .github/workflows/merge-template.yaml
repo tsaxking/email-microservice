@@ -6,20 +6,20 @@ on:
       - '*'
 
 jobs:
-
   merge-template:
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        templates: [
-            "tsaxking/file-microservice",
-            "tsaxking/uuid-microservice",
-            "tsaxking/email-microservice",
-            "tsaxking/discord-bot-microservice",
-            "tsaxking/ntp-microservice"
-        ]
+        templates:
+          [
+            'tsaxking/file-microservice',
+            'tsaxking/uuid-microservice',
+            'tsaxking/email-microservice',
+            'tsaxking/discord-bot-microservice',
+            'tsaxking/ntp-microservice',
+          ]
 
     steps:
       - name: Retrieve git dependencies

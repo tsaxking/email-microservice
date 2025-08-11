@@ -32,11 +32,11 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    env: 
-        DB_HOST: localhost
-        DB_PORT: 5432
-        DB_USER: postgres
-        DB_PASS: postgres
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASS: postgres
 
     steps:
       - name: Checkout repository
@@ -56,7 +56,6 @@ jobs:
         run: |
           echo "Installing dependencies..."
           pnpm install --frozen-lockfile
-
 
       - name: Run migrations
         run: |

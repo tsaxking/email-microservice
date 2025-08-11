@@ -45,7 +45,7 @@ export const openStructs = () =>
 						return readdir(path.join(dir, object));
 					}
 					return readFile(path.join(dir, object));
-				})
+				}),
 			);
 
 			return res.flat();
@@ -55,9 +55,7 @@ export const openStructs = () =>
 
 		return res.sort((a, b) => a.name.localeCompare(b.name)).filter((s) => !s.data.sample);
 	});
-export default async (
-	build: 'true' | 'false' = 'true'
-) => {
+export default async (build: 'true' | 'false' = 'true') => {
 	if (build === 'true') {
 		await openStructs();
 		await Struct.buildAll(DB);
@@ -82,7 +80,7 @@ export default async (
 		for (const row of dbCols) {
 			dbColMap.set(row.column_name, {
 				data_type: row.data_type,
-				is_nullable: row.is_nullable
+				is_nullable: row.is_nullable,
 			});
 		}
 
@@ -95,8 +93,7 @@ export default async (
 				.replace('Builder', '')
 				.toLowerCase();
 
-
-            // column in program but not in DB
+			// column in program but not in DB
 			const actual = dbColMap.get(toSnakeCase(fromCamelCase(name)));
 			if (!actual) {
 				console.warn(`[MISSING COLUMN] ${tableName}.${name} not found in DB`);
@@ -114,20 +111,22 @@ export default async (
 			}
 		}
 
-        // check if there are extra columns in DB not defined in program
-        for (const [name, actual] of dbColMap.entries()) {
-            if (!(toCamelCase(fromSnakeCase(name)) in columns)) {
-                console.warn(`[EXTRA COLUMN] ${tableName}.${name} exists in DB but not in program`);
-                success = false;
-            }
-        }
+		// check if there are extra columns in DB not defined in program
+		for (const [name, actual] of dbColMap.entries()) {
+			if (!(toCamelCase(fromSnakeCase(name)) in columns)) {
+				console.warn(`[EXTRA COLUMN] ${tableName}.${name} exists in DB but not in program`);
+				success = false;
+			}
+		}
 	}
 
-    if (!success) {
-        console.error('Schema test failed. Please check the logs for details. You may need to push your schema changes to the database.');
-        process.exit(1);
-    }
+	if (!success) {
+		console.error(
+			'Schema test failed. Please check the logs for details. You may need to push your schema changes to the database.',
+		);
+		process.exit(1);
+	}
 
-    console.log('Schema test passed successfully!');
-    return true;
+	console.log('Schema test passed successfully!');
+	return true;
 };

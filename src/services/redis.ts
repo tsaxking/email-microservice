@@ -82,7 +82,7 @@ export namespace Redis {
 					log(`Welcome message from instance: ${name} (${instanceId})`);
 					if (name === REDIS_NAME) {
 						console.warn(
-							`Another instance of Redis with name "${REDIS_NAME}" is already running. This may cause conflicts.`
+							`Another instance of Redis with name "${REDIS_NAME}" is already running. This may cause conflicts.`,
 						);
 						res();
 					}
@@ -111,16 +111,16 @@ export namespace Redis {
 	const send = <
 		T extends {
 			[key: string]: z.ZodType;
-		}
+		},
 	>(
-		message: RedisMessage<T>
+		message: RedisMessage<T>,
 	): ResultPromise<void> => {
 		return attemptAsync(async () => {
 			const payload = JSON.stringify({
 				event: message.event,
 				data: message.data,
 				date: message.date.toISOString(),
-				id: message.id
+				id: message.id,
 			});
 			_pub?.publish('channel:' + REDIS_NAME, payload);
 		});
@@ -129,7 +129,7 @@ export namespace Redis {
 	type RedisMessage<
 		T extends {
 			[key: string]: z.ZodType;
-		}
+		},
 	> = {
 		event: keyof T;
 		data: z.infer<T[keyof T]>;
@@ -141,7 +141,7 @@ export namespace Redis {
 		Events extends {
 			[key: string]: z.ZodType;
 		},
-		Name extends string
+		Name extends string,
 	> {
 		// public static services = new Map<string, ListeningService<any, any>>();
 
@@ -160,11 +160,11 @@ export namespace Redis {
 
 		constructor(
 			public readonly name: Name,
-			public readonly events: Events
+			public readonly events: Events,
 		) {
 			if (name === REDIS_NAME) {
 				console.warn(
-					`Service name "${name}" cannot be the same as the Redis instance name "${REDIS_NAME}".`
+					`Service name "${name}" cannot be the same as the Redis instance name "${REDIS_NAME}".`,
 				);
 			}
 
@@ -175,7 +175,7 @@ export namespace Redis {
 							event: z.string(),
 							data: z.unknown(),
 							date: z.string().transform((v) => new Date(v)),
-							id: z.number()
+							id: z.number(),
 						})
 						.parse(JSON.parse(message));
 
@@ -186,7 +186,7 @@ export namespace Redis {
 						this.emit(event, {
 							data,
 							date: parsed.date,
-							id: parsed.id
+							id: parsed.id,
 						});
 					}
 				} catch (error) {
@@ -202,10 +202,10 @@ export namespace Redis {
 		E extends {
 			[key: string]: z.ZodType;
 		},
-		Name extends string
+		Name extends string,
 	>(
 		name: Name,
-		events: E
+		events: E,
 	) => {
 		if (name.includes(':')) {
 			throw new Error(`Service name "${name}" cannot contain a colon (:) character.`);
@@ -218,7 +218,7 @@ export namespace Redis {
 			event,
 			data,
 			date: new Date(),
-			id: messageId++
+			id: messageId++,
 		});
 	};
 
@@ -244,7 +244,7 @@ export namespace Redis {
 		event: string,
 		data: Req,
 		returnType: z.ZodType<Res>,
-		timeoutMs = 1000
+		timeoutMs = 1000,
 	) => {
 		return attemptAsync<Res>(async () => {
 			const requestId = uuid();
@@ -263,14 +263,14 @@ export namespace Redis {
 							.object({
 								data: z.unknown(),
 								date: z.string().transform((v) => new Date(v)),
-								id: z.number()
+								id: z.number(),
 							})
 							.parse(JSON.parse(message));
 
 						const validated = returnType.safeParse(parsed.data);
 						if (!validated.success) {
 							return reject(
-								new Error(`Invalid response data: ${JSON.stringify(validated.error.issues)}`)
+								new Error(`Invalid response data: ${JSON.stringify(validated.error.issues)}`),
 							);
 						}
 						clearTimeout(timeout);
@@ -292,8 +292,8 @@ export namespace Redis {
 					requestId,
 					responseChannel,
 					date: new Date().toISOString(),
-					id: messageId++
-				})
+					id: messageId++,
+				}),
 			);
 
 			return responsePromise;
@@ -312,7 +312,7 @@ export namespace Redis {
 		service: string,
 		event: string,
 		reqSchema: z.ZodType<Req>,
-		handler: QueryHandler<Req>
+		handler: QueryHandler<Req>,
 	) => {
 		const channel = `query:${service}:${event}`;
 
@@ -324,7 +324,7 @@ export namespace Redis {
 						requestId: z.string(),
 						responseChannel: z.string(),
 						date: z.string().transform((v) => new Date(v)),
-						id: z.number()
+						id: z.number(),
 					})
 					.parse(JSON.parse(message));
 
@@ -339,7 +339,7 @@ export namespace Redis {
 					id: parsed.id,
 					date: parsed.date,
 					requestId: parsed.requestId,
-					responseChannel: parsed.responseChannel
+					responseChannel: parsed.responseChannel,
 				});
 
 				await _pub?.publish(
@@ -347,8 +347,8 @@ export namespace Redis {
 					JSON.stringify({
 						data: responseData,
 						date: new Date().toISOString(),
-						id: messageId++
-					})
+						id: messageId++,
+					}),
 				);
 			} catch (err) {
 				console.error(`[queryListen:${channel}] Error:`, err);
@@ -411,7 +411,7 @@ export namespace Redis {
 
 		constructor(
 			public readonly name: string,
-			public readonly schema: z.ZodType<T>
+			public readonly schema: z.ZodType<T>,
 		) {}
 
 		put(data: T, notify = false) {
@@ -494,7 +494,7 @@ export namespace Redis {
 					data,
 					date: new Date(),
 					packet: packet++,
-					id
+					id,
 				};
 
 				const serialized = JSON.stringify(payload);
@@ -504,7 +504,7 @@ export namespace Redis {
 			stream.once('end', async () => {
 				const endPayload: StreamEnd = {
 					id,
-					date: new Date()
+					date: new Date(),
 				};
 
 				const serializedEnd = JSON.stringify(endPayload);
@@ -521,19 +521,19 @@ export namespace Redis {
 		streamName: string,
 		schema: z.ZodType<T>,
 		handler: (data: T, date: Date, packet: number, id: number) => void,
-		onEnd?: (id: number, date: Date) => void
+		onEnd?: (id: number, date: Date) => void,
 	) => {
 		return attemptAsync<void>(async () => {
 			const streamDataSchema = z.object({
 				data: z.unknown(),
 				date: z.string().transform((v) => new Date(v)),
 				packet: z.number(),
-				id: z.number()
+				id: z.number(),
 			});
 
 			const streamEndSchema = z.object({
 				id: z.number(),
-				date: z.string().transform((v) => new Date(v))
+				date: z.string().transform((v) => new Date(v)),
 			});
 
 			await _sub?.subscribe(`stream:${streamName}`, (message: string) => {
