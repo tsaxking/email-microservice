@@ -5,21 +5,32 @@ on:
     tags:
       - '*'
 
+
 jobs:
+  format:
+    uses: ./.github/workflows/format-check.yaml
+  unit-tests:
+    uses: ./.github/workflows/unit-test.yaml
+
   merge-template:
     runs-on: ubuntu-latest
+    needs: [
+      format,
+      unit-tests,
+    ]
 
     strategy:
       fail-fast: false
       matrix:
         templates:
           [
-            'tsaxking/file-microservice',
-            'tsaxking/uuid-microservice',
-            'tsaxking/email-microservice',
-            'tsaxking/discord-bot-microservice',
-            'tsaxking/ntp-microservice',
+            'git@github.com:tsaxking/file-microservice',
+            'git@github.com:tsaxking/uuid-microservice',
+            'git@github.com:tsaxking/email-microservice',
+            'git@github.com:tsaxking/discord-bot-microservice',
+            'git@github.com:tsaxking/ntp-microservice',
           ]
+
 
     steps:
       - name: Retrieve git dependencies
