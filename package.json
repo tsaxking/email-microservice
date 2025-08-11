@@ -14,8 +14,9 @@
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "dev": "concurrently \"pnpm build:watch\" \"pnpm start:watch\"",
-    "script": "pnpm build && node dist/scripts/index.js"
+    "dev": "pnpm build && concurrently \"pnpm build:watch\" \"pnpm start:watch\"",
+    "script": "pnpm build && node dist/scripts/index.js",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -41,6 +42,7 @@
     "ts-utils": "github:tsaxking/global-ts-utilities",
     "typescript-eslint": "^8.37.0",
     "uuid": "^11.1.0",
+    "vitest": "^3.2.4",
     "zod": "^4.0.5"
   },
   "devDependencies": {
