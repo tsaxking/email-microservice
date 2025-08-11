@@ -72,6 +72,9 @@ importers:
         specifier: ^4.0.5
         version: 4.0.5
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.33.0
+        version: 9.33.0
       '@types/cli-table':
         specifier: ^0.3.4
         version: 0.3.4

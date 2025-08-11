@@ -50,6 +50,7 @@
 		"zod": "^4.0.5"
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.33.0",
 		"@types/cli-table": "^0.3.4",
 		"@types/express": "^5.0.3",
 		"@types/fuzzy-search": "^2.1.5",
