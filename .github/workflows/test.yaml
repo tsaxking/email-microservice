@@ -21,6 +21,12 @@ jobs:
           - 6379:6379
 
     steps:
+      - name: 'Setup ssh-agent'
+        uses: 'webfactory/ssh-agent@v0.5.0'
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE }}
+
+      
       - name: Checkout repo
         uses: actions/checkout@v3
 
