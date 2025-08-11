@@ -1,7 +1,7 @@
 import { ComplexEventEmitter } from 'ts-utils/event-emitter';
 
 export type Events = {
-    error: [Error];
+	error: [Error];
 };
 
 export default new ComplexEventEmitter<Events>();

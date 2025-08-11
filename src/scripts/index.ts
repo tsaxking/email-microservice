@@ -10,15 +10,15 @@ const main = async () => {
 
 	if (!file) {
 		const scripts = (await fs.readdir(path.join(process.cwd(), 'scripts'))).filter(
-			(s) => s.endsWith('.ts') && s !== 'index.ts',
+			(s) => s.endsWith('.ts') && s !== 'index.ts'
 		);
 		const chosen = (
 			await select({
 				message: 'Select a script to run',
 				options: scripts.map((s) => ({
 					name: s,
-					value: s,
-				})),
+					value: s
+				}))
 			})
 		).unwrap();
 		if (!chosen) {
@@ -28,7 +28,7 @@ const main = async () => {
 		args =
 			(
 				await prompt({
-					message: 'Enter arguments (space separated)',
+					message: 'Enter arguments (space separated)'
 				})
 			)
 				.unwrap()

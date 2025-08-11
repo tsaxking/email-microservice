@@ -8,7 +8,6 @@ on:
       - '!gh-pages'
   workflow_call:
 
-
 permissions:
   contents: read
 
