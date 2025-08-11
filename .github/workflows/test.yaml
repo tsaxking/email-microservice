@@ -1,0 +1,45 @@
+name: Email Server Integration Test
+
+on:
+  push:
+jobs:
+  test-email-server:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: v22.12.0
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build project
+        run: pnpm build
+
+      - name: Start email server
+        run: pnpm start
+
+      - name: Start email server (background)
+        run: |
+          nohup pnpm start > server.log 2>&1 &
+          echo $! > server.pid
+          sleep 5  # give server time to start
+
+      - name: Run test script
+        run: pnpm test
+
+      - name: Stop email server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || echo "Server already stopped"
+            rm server.pid
+          fi

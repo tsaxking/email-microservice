@@ -41,6 +41,17 @@ const initDb = async () => {
       clicks INTEGER DEFAULT 0
     );
   `);
+
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS emails (
+      id TEXT PRIMARY KEY,
+      to_email TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      text TEXT NOT NULL,
+      html TEXT,
+      created_at INTEGER NOT NULL
+    );
+  `);
 };
 
 const trackLinks = async (html: string): Promise<string> => {
@@ -64,16 +75,19 @@ const trackLinks = async (html: string): Promise<string> => {
   return html;
 };
 
-type EmailMessage = {
+export type EmailMessage = {
+  id: string;
   to: string;
   subject: string;
   text: string;
   html?: string;
 };
 
+
 const sendEmail = async (message: EmailMessage) => {
   const schema = z.object({
-    to: z.string().email(),
+    id: z.uuidv4(),
+    to: z.email(),
     subject: z.string().min(1),
     text: z.string().min(1),
     html: z.string().optional(),
@@ -89,10 +103,28 @@ const sendEmail = async (message: EmailMessage) => {
     };
   }
 
-  const emailData = parsed.data;
+  let emailData = parsed.data;
+
 
   if (emailData.html) {
     emailData.html = await trackLinks(emailData.html);
+  }
+
+  // Save email to DB
+  try {
+    await db.run(
+      `INSERT INTO emails (id, to_email, subject, text, html, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      emailData.id,
+      emailData.to,
+      emailData.subject,
+      emailData.text,
+      emailData.html || null,
+      Date.now()
+    );
+  } catch (err) {
+    console.error('Failed to save email to DB:', err);
+    // You can decide whether to continue or fail here
   }
 
   try {
@@ -101,20 +133,43 @@ const sendEmail = async (message: EmailMessage) => {
       from: process.env.SENDGRID_FROM_EMAIL!,
     });
 
+    // Publish success status to Redis
+    await client?.publish(
+      process.env.REDIS_NAME! + ':status',
+      JSON.stringify({
+        id: emailData.id,
+        status: 'success',
+      })
+    );
+
     return {
       success: true,
       message: 'Email sent successfully',
+      id: emailData.id,
     };
   } catch (error: any) {
+    // Publish failure status to Redis
+    await client?.publish(
+      process.env.REDIS_NAME! + ':status',
+      JSON.stringify({
+        id: emailData.id,
+        status: 'failure',
+        error: error.message,
+      })
+    );
+
     return {
       success: false,
       message: `Failed to send email: ${error.message}`,
+      id: emailData.id,
     };
   }
 };
 
+let client: ReturnType<typeof createClient> | null = null;
+
 const startWorker = async () => {
-  const client = createClient();
+  client = createClient();
   await client.connect();
 
   const queueKey = process.env.REDIS_NAME!;
