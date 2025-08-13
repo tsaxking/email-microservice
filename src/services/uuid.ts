@@ -18,9 +18,9 @@ class UUIDService {
 			process.env.UUID_SERVICE_NAME || 'uuidServiceQueue',
 			'reserve',
 			{
-				count: this.maxSize,
+				count: this.maxSize
 			},
-			z.array(z.string()),
+			z.array(z.string())
 		);
 		if (res.isErr()) {
 			console.error('Error reserving UUIDs:', res.error);

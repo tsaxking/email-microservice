@@ -5,7 +5,6 @@ on:
     tags:
       - '*'
 
-
 jobs:
   format:
     uses: ./.github/workflows/format-check.yaml
@@ -14,23 +13,19 @@ jobs:
 
   merge-template:
     runs-on: ubuntu-latest
-    needs: [
-      format,
-      unit-tests,
-    ]
+    needs: [format, unit-tests]
 
     strategy:
       fail-fast: false
       matrix:
         templates:
           [
-            'git@github.com:tsaxking/file-microservice',
-            'git@github.com:tsaxking/uuid-microservice',
-            'git@github.com:tsaxking/email-microservice',
-            'git@github.com:tsaxking/discord-bot-microservice',
-            'git@github.com:tsaxking/ntp-microservice',
+            'git@github.com:tsaxking/file-microservice.git',
+            'git@github.com:tsaxking/uuid-microservice.git',
+            'git@github.com:tsaxking/email-microservice.git',
+            'git@github.com:tsaxking/discord-bot-microservice.git',
+            'git@github.com:tsaxking/ntp-microservice.git'
           ]
-
 
     steps:
       - name: Retrieve git dependencies
@@ -56,7 +51,7 @@ jobs:
           CLONE_DIR="target-repo"
 
           echo "Cloning target repo"
-          git clone git@github.com:$REPOSITORY.git $CLONE_DIR
+          git clone $REPOSITORY $CLONE_DIR
           cd $CLONE_DIR
 
           echo "Configuring Git"

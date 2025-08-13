@@ -1,4 +1,4 @@
-import testSchema from '../structs/test-schema';
+import testSchema from './test-schema';
 import { describe, it, expect } from 'vitest';
 import { config } from 'dotenv';
 

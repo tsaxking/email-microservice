@@ -13,12 +13,12 @@ type GlobalConfig = {
 export const prompt = (
 	config: GlobalConfig & {
 		default?: string;
-	},
+	}
 ) =>
 	attemptAsync(async () => {
 		if (config.clear) console.clear();
 		const res = await inquirer.input({
-			message: config.message,
+			message: config.message
 		});
 		if (!res) {
 			return config.default;
@@ -31,14 +31,14 @@ export const repeatPrompt = (
 	config: GlobalConfig & {
 		validate?: (output: string) => boolean;
 		allowBlank?: boolean;
-	},
+	}
 ) =>
 	attemptAsync(async () => {
 		if (config.clear) console.clear();
 		let firstTime = true;
 		const run = async (): Promise<string> => {
 			const res = await inquirer.input({
-				message: firstTime ? config.message : 'Invalid input. ' + config.message,
+				message: firstTime ? config.message : 'Invalid input. ' + config.message
 			});
 			if (!res && config.allowBlank) {
 				return '';
@@ -81,7 +81,7 @@ export const select = <T = unknown>(
 		options: Option<T>[];
 		exit?: boolean;
 		cancel?: boolean;
-	},
+	}
 ) =>
 	attemptAsync(async () => {
 		if (config.clear) console.clear();
@@ -90,26 +90,26 @@ export const select = <T = unknown>(
 			value: T | undefined | 'exit';
 		}[] = config.options.map((o) => ({
 			name: o.name,
-			value: o.value,
+			value: o.value
 		}));
 
 		if (config.cancel) {
 			choices.push({
 				name: 'Cancel',
-				value: undefined,
+				value: undefined
 			});
 		}
 
 		if (config.exit) {
 			choices.push({
 				name: 'Exit',
-				value: 'exit',
+				value: 'exit'
 			});
 		}
 
 		const res = await inquirer.select<T | undefined | 'exit'>({
 			message: config.message,
-			choices,
+			choices
 			// loop: true,
 		});
 
@@ -123,7 +123,7 @@ export const select = <T = unknown>(
 export const multiSelect = <T = unknown>(
 	config: GlobalConfig & {
 		options: Option<T>[];
-	},
+	}
 ) =>
 	attemptAsync(async () => {
 		if (config.clear) console.clear();
@@ -131,8 +131,8 @@ export const multiSelect = <T = unknown>(
 			message: config.message,
 			choices: config.options.map((o) => ({
 				name: o.name,
-				value: o.value,
-			})),
+				value: o.value
+			}))
 			// loop: true,
 		});
 	});
@@ -141,7 +141,7 @@ export const confirm = (config: GlobalConfig) =>
 	attemptAsync(async () => {
 		if (config.clear) console.clear();
 		return inquirer.confirm({
-			message: config.message,
+			message: config.message
 		});
 	});
 
@@ -149,14 +149,14 @@ export const password = (config: GlobalConfig) =>
 	attemptAsync(async () => {
 		if (config.clear) console.clear();
 		return inquirer.password({
-			message: config.message,
+			message: config.message
 		});
 	});
 
 export const search = <T = unknown>(
 	config: GlobalConfig & {
 		options: Option<T>[];
-	},
+	}
 ) =>
 	attemptAsync(async () => {
 		return inquirer.search({
@@ -167,7 +167,7 @@ export const search = <T = unknown>(
 				}
 				const searcher = new FuzzySearch(config.options, ['name']);
 				return searcher.search(input);
-			},
+			}
 		});
 	});
 
@@ -175,7 +175,7 @@ export const selectFromTable = <T extends Record<string, unknown>>(
 	config: GlobalConfig & {
 		options: T[];
 		omit?: (keyof T)[];
-	},
+	}
 ) =>
 	attemptAsync(
 		async () =>
@@ -187,7 +187,7 @@ export const selectFromTable = <T extends Record<string, unknown>>(
 				}
 
 				const headers = Object.keys(config.options[0]).filter(
-					(k) => !config.omit?.includes(k as keyof T),
+					(k) => !config.omit?.includes(k as keyof T)
 				);
 
 				const stdin = process.stdin;
@@ -201,7 +201,7 @@ export const selectFromTable = <T extends Record<string, unknown>>(
 					console.clear();
 					console.log(config.message);
 					const t = new Table({
-						head: headers,
+						head: headers
 					});
 
 					t.push(
@@ -211,8 +211,8 @@ export const selectFromTable = <T extends Record<string, unknown>>(
 									return `${Colors.FgBlue}${o[h]}${Colors.Reset}`;
 								}
 								return String(o[h]);
-							}),
-						),
+							})
+						)
 					);
 
 					console.log(t.toString());
@@ -243,14 +243,14 @@ export const selectFromTable = <T extends Record<string, unknown>>(
 				};
 
 				run(selected);
-			}),
+			})
 	);
 
 export const viewTable = <T extends Record<string, unknown>>(
 	config: GlobalConfig & {
 		options: T[];
 		omit?: (keyof T)[];
-	},
+	}
 ) =>
 	attemptAsync(
 		async () =>
@@ -259,7 +259,7 @@ export const viewTable = <T extends Record<string, unknown>>(
 				if (!config.options.length) {
 					return alert({
 						message: 'Table is empty',
-						clear: config.clear,
+						clear: config.clear
 					})
 						.then(res)
 						.catch(rej);
@@ -268,7 +268,7 @@ export const viewTable = <T extends Record<string, unknown>>(
 				if (config.clear) console.clear();
 
 				const headers = Object.keys(config.options[0]).filter(
-					(k) => !config.omit?.includes(k as keyof T),
+					(k) => !config.omit?.includes(k as keyof T)
 				);
 
 				const stdin = process.stdin;
@@ -281,15 +281,15 @@ export const viewTable = <T extends Record<string, unknown>>(
 					console.clear();
 					console.log(config.message);
 					const t = new Table({
-						head: headers,
+						head: headers
 					});
 
 					t.push(
 						...config.options.map((o) =>
 							headers.map((h) => {
 								return String(o[h]);
-							}),
-						),
+							})
+						)
 					);
 
 					console.log(t.toString());
@@ -312,7 +312,7 @@ export const viewTable = <T extends Record<string, unknown>>(
 				};
 
 				run();
-			}),
+			})
 	);
 
 let id = -1;
@@ -326,7 +326,7 @@ export class Folder {
 		public readonly name: string,
 		public readonly description: string,
 		public readonly icon: string,
-		public readonly actions: (Action | Folder)[],
+		public readonly actions: (Action | Folder)[]
 	) {
 		for (const a of this.actions) {
 			if (a instanceof Folder) {
@@ -352,8 +352,8 @@ export class Folder {
 					clear: true,
 					options: [...this.actions, ...extras].map((a) => ({
 						name: `${a.icon} ${a.name}: ${Colors.Dim}${a.description}${Colors.Reset}`,
-						value: () => a.action(),
-					})),
+						value: () => a.action()
+					}))
 				})
 			).unwrap();
 
@@ -389,7 +389,7 @@ export class Action {
 		public readonly name: string,
 		public readonly description: string,
 		public readonly icon: string,
-		public readonly _action: () => unknown,
+		public readonly _action: () => unknown
 	) {}
 
 	public action() {

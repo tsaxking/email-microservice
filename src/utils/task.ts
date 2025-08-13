@@ -13,8 +13,8 @@ export const runTask = (...args: string[]) => {
 						rej(error);
 					}
 					res();
-				}),
-			),
+				})
+			)
 	);
 };
 

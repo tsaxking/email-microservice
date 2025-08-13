@@ -45,7 +45,7 @@ export const openStructs = () =>
 						return readdir(path.join(dir, object));
 					}
 					return readFile(path.join(dir, object));
-				}),
+				})
 			);
 
 			return res.flat();
@@ -80,7 +80,7 @@ export default async (build: 'true' | 'false' = 'true') => {
 		for (const row of dbCols) {
 			dbColMap.set(row.column_name, {
 				data_type: row.data_type,
-				is_nullable: row.is_nullable,
+				is_nullable: row.is_nullable
 			});
 		}
 
@@ -122,7 +122,7 @@ export default async (build: 'true' | 'false' = 'true') => {
 
 	if (!success) {
 		console.error(
-			'Schema test failed. Please check the logs for details. You may need to push your schema changes to the database.',
+			'Schema test failed. Please check the logs for details. You may need to push your schema changes to the database.'
 		);
 		process.exit(1);
 	}
