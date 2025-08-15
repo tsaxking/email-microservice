@@ -11,10 +11,6 @@ services:
     depends_on:
       - db
       - redis
-    ports:
-      - '${PORT}:${PORT}'
-    volume:
-      - mydata:/data
   db:
     image: postgres:16
     container_name: db
@@ -40,4 +36,3 @@ services:
 volumes:
   pgdata:
   redisdata:
-  mydata:

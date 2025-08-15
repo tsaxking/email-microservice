@@ -6,7 +6,7 @@ RUN npm install -g pnpm@latest typescript
 WORKDIR /app
 
 # Copy only the files needed for install first, to cache dependencies better
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 RUN pnpm install --frozen-lockfile
 
@@ -14,6 +14,7 @@ RUN pnpm install --frozen-lockfile
 COPY . .
 
 
+RUN echo "PUBLIC_APP_NAME=Docker App Default" > .env
 RUN pnpm build
 
 EXPOSE 3000
