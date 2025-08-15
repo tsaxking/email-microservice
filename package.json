@@ -19,7 +19,8 @@
 		"script": "pnpm build && node dist/scripts/index.js",
 		"test": "vitest run",
 		"test:integration": "pnpm script test-integration",
-		"post-build": "node ./src/scripts/post-build.js"
+		"post-build": "node ./src/scripts/post-build.js",
+		"system:check": "pnpm format && pnpm lint && pnpm build"
 	},
 	"keywords": [],
 	"author": "",
