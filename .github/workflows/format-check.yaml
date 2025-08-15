@@ -15,11 +15,6 @@ jobs:
   format_and_lint:
     runs-on: ubuntu-latest
     steps:
-      - name: 'Setup ssh-agent'
-        uses: 'webfactory/ssh-agent@v0.5.0'
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE }}
-
       - name: Retrieve git dependencies
         uses: actions/checkout@v3
 

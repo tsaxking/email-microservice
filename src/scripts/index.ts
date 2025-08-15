@@ -9,7 +9,7 @@ const main = async () => {
 	let [, , file, ...args] = process.argv;
 
 	if (!file) {
-		const scripts = (await fs.readdir(path.join(process.cwd(), 'scripts'))).filter(
+		const scripts = (await fs.readdir(path.join(process.cwd(), 'src', 'scripts'))).filter(
 			(s) => s.endsWith('.ts') && s !== 'index.ts'
 		);
 		const chosen = (
@@ -37,7 +37,7 @@ const main = async () => {
 
 	console.log('Running file:', file);
 
-	const res = await runTs(path.join('scripts', file), 'default', ...args);
+	const res = await runTs(path.join('dist', 'scripts', file + '.js'), 'default', ...args);
 
 	if (res.isErr()) {
 		console.error(res.error);
