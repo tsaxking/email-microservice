@@ -66,7 +66,7 @@ jobs:
           echo "Copying changes from template repo"
           # Assuming the GHA starts in the template repo root
           # Use rsync to copy everything from parent dir except target-repo
-          rsync -av --exclude "target-repo" --exclude ".git"
+          rsync -av --exclude "target-repo" --exclude ".git" ../ ./
 
 
           echo "Committing and pushing changes"
