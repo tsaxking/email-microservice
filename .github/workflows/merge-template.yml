@@ -1,0 +1,149 @@
+name: 'Merge Template'
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  pre-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure on deploy or main
+        run: |
+          git fetch origin deploy
+          git fetch origin main
+
+          if git merge-base --is-ancestor $GITHUB_SHA origin/deploy || \
+            git merge-base --is-ancestor $GITHUB_SHA origin/main; then
+            echo "Commit is on deploy or main — continuing"
+          else
+            echo "Commit is not on deploy or main — exiting"
+            exit 1
+          fi
+
+  format:
+    needs: pre-check
+    uses: ./.github/workflows/code-formatter.yml
+  unit-tests:
+    needs: pre-check
+    uses: ./.github/workflows/testing-unit.yml
+  build:
+    needs: pre-check
+    uses: ./.github/workflows/build.yml
+  docker-compose:
+    needs: pre-check
+    uses: ./.github/workflows/docker-compose-test.yml
+
+
+  push-docker-image:
+    runs-on: ubuntu-latest
+    needs: [format, unit-tests, build, docker-compose]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if on deploy
+        run: |
+          git fetch origin deploy
+          if ! git merge-base --is-ancestor $GITHUB_SHA origin/deploy; then
+            echo "Not a deploy tag — exiting"
+            exit 0
+          fi
+
+      - name: Retrieve credentials and push image
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          NAME=$(basename $GITHUB_REPOSITORY)
+
+          echo ${{ secrets.GITEA_REGISTRY_PWD }} | docker login ${{ secrets.GITEA_REGISTRY_URL }} -u ${{ secrets.GITEA_REGISTRY_USER }} --password-stdin
+          docker build -t my-image:latest .
+          docker tag my-image:latest ${{ secrets.GITEA_REGISTRY_URL }}/$NAME:$TAG
+          docker push ${{ secrets.GITEA_REGISTRY_URL }}/$NAME:$TAG
+
+  merge-template:
+    runs-on: ubuntu-latest
+    needs: [format, unit-tests, build, docker-compose]
+
+    strategy:
+      fail-fast: false
+      matrix:
+        templates:
+          [
+            'git@github.com:tsaxking/file-microservice.git',
+            'git@github.com:tsaxking/uuid-microservice.git',
+            'git@github.com:tsaxking/email-microservice.git',
+            'git@github.com:tsaxking/discord-bot-microservice.git',
+            'git@github.com:tsaxking/ntp-microservice.git'
+          ]
+
+    steps:
+      - name: Retrieve git dependencies
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0 # Checkout everything to get access to the tags
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Check if on main
+        # if not, cancel workflow
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor $GITHUB_SHA origin/main; then
+            echo "Not a main tag — exiting"
+            exit 0
+          fi
+
+      - name: 'Setup ssh-agent'
+        uses: 'webfactory/ssh-agent@v0.5.0'
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.13.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: v22.12.0
+
+      - name: 'Installing dependencies'
+        run: |
+          pnpm i
+
+      - name: Send pull-request
+        run: |
+          echo "Creating variables"
+          LATEST_TAG=$(git describe --tags --always --abbrev=0)
+          LAST_COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+          REPOSITORY="${{ matrix.templates }}"
+          BRANCH_NAME="chore-update-scripts-to-$LATEST_TAG"
+          CLONE_DIR="target-repo"
+
+          echo "Running premerge scripts"
+          pnpm script premerge-render ${{ matrix.templates }} --force
+
+          echo "Cloning target repo"
+          git clone $REPOSITORY $CLONE_DIR
+          cd $CLONE_DIR
+
+          echo "Configuring Git"
+          git config user.email "taylorking206@u.boisestate.edu"
+          git config user.name "Sveltekit Bot"
+
+          echo "Creating new branch from default branch"
+          git checkout main
+          git pull origin main
+          git checkout -b "$BRANCH_NAME"
+
+          echo "Copying changes from template repo"
+          # Assuming the GHA starts in the template repo root
+          # Use rsync to copy everything from parent dir except target-repo
+          rsync -av --exclude "target-repo" --exclude ".git" --exclude ".github/workflows/docs.yaml" ../ ./
+
+          echo "Committing and pushing changes"
+          git add .
+          git commit -m "chore: update scripts to $LATEST_TAG" || echo "No changes to commit"
+          git push origin "$BRANCH_NAME"
