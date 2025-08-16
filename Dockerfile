@@ -1,4 +1,4 @@
-FROM node:22.12.0-bullseye
+FROM node:22.12.0-alpine
 
 # Install global dependencies first (rarely changes)
 RUN npm install -g pnpm@latest typescript
