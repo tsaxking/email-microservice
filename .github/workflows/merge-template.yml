@@ -35,7 +35,6 @@ jobs:
     needs: pre-check
     uses: ./.github/workflows/docker-compose-test.yml
 
-
   push-docker-image:
     runs-on: ubuntu-latest
     needs: [format, unit-tests, build, docker-compose]
