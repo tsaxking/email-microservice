@@ -17,8 +17,7 @@
 		"db:studio": "drizzle-kit studio",
 		"dev": "pnpm build && concurrently \"pnpm build:watch\" \"pnpm start:watch\"",
 		"script": "pnpm build && node dist/scripts/index.js",
-		"test": "vitest run",
-		"test:email": "pnpm build && node ./dist/tests/test-email.js"
+		"test": "vitest run"
 	},
 	"keywords": [],
 	"author": "",
@@ -36,18 +35,20 @@
 		"dotenv": "^17.2.0",
 		"drizzle-kit": "^0.31.4",
 		"drizzle-orm": "^0.38.3",
-		"drizzle-struct": "github:tsaxking/drizzle-struct",
+		"drizzle-struct": "git+https://github.com/tsaxking/drizzle-struct#v1.0.19",
 		"drizzle-zod": "^0.6.1",
 		"eslint": "^9.33.0",
 		"eslint-config-prettier": "^10.1.8",
 		"express": "^5.1.0",
 		"fuzzy-search": "^3.2.1",
 		"globals": "^16.3.0",
+		"nodemailer": "^7.0.6",
 		"nodemon": "^3.1.10",
 		"postgres": "^3.4.7",
 		"prettier": "^3.6.2",
 		"redis": "^5.6.0",
-		"ts-utils": "github:tsaxking/global-ts-utilities",
+		"redis-utils": "git+https://github.com/tsaxking/redis#v2.0.5",
+		"ts-utils": "git+https://github.com/tsaxking/global-ts-utilities#v1.0.0",
 		"typescript-eslint": "^8.37.0",
 		"uuid": "^11.1.0",
 		"vitest": "^3.2.4",
@@ -60,6 +61,16 @@
 		"@types/express": "^5.0.3",
 		"@types/fuzzy-search": "^2.1.5",
 		"@types/node": "^24.0.14",
+		"@types/nodemailer": "^7.0.1",
 		"@types/uuid": "^10.0.0"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"drizzle-struct",
+			"esbuild",
+			"math",
+			"redis-service",
+			"ts-utils"
+		]
 	}
 }

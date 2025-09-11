@@ -1,7 +1,8 @@
 import { config } from 'dotenv';
-import { createClient } from 'redis';
 import express, { Request, Response } from 'express';
 import { Emails } from './structs/emails';
+import { Struct } from 'drizzle-struct/back-end';
+import { DB } from './db';
 
 config();
 
@@ -13,43 +14,16 @@ export type EmailMessage = {
 	html?: string;
 };
 
-let client: ReturnType<typeof createClient> | null = null;
 
-const startWorker = async () => {
-	client = createClient();
-	await client.connect();
-
-	const queueKey = process.env.REDIS_NAME!;
-	console.log(`Listening to Redis queue "${queueKey}"`);
-
-	while (true) {
-		try {
-			const res = await client.brPop(queueKey, 0);
-			const job = res?.element;
-			if (!job) continue;
-
-			const parsed = Emails.parse(job);
-
-			if (parsed.isErr()) {
-				console.error('Failed to parse job:', parsed.error);
-				continue;
-			}
-
-			const result = await Emails.send(parsed.value);
-
-			if (result.isOk()) {
-				console.log('✔', result.value);
-			} else {
-				console.error('✘', result.error);
-			}
-		} catch (err) {
-			console.error('Redis error:', err);
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-		}
-	}
+export const init = async () => {
+	await Struct.buildAll(DB);
 };
 
-const startServer = () => {
+export const startWorker = async () => {
+
+};
+
+export const startServer = () => {
 	const app = express();
 
 	app.get('/r/:id', async (req: Request, res: Response) => {
@@ -81,9 +55,15 @@ const startServer = () => {
 	});
 };
 
-const main = async () => {
+export const main = async () => {
+	await init();
 	startServer();
 	startWorker();
 };
 
-main().catch(console.error);
+if (require.main === module) {
+	main().catch((err) => {
+		console.error('Error starting email service:', err);
+		process.exit(1);
+	});
+}
