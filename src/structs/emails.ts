@@ -1,9 +1,8 @@
 import { integer, text } from 'drizzle-orm/pg-core';
 import { Struct } from 'drizzle-struct/back-end';
 import { attemptAsync, attempt } from 'ts-utils/check';
-import sgMail from '@sendgrid/mail';
 import { z } from 'zod';
-import { Redis } from '../services/redis';
+import nodemailer from 'nodemailer';
 
 export namespace Emails {
 	const requiredEnvVars = ['SENDGRID_API_KEY', 'SENDGRID_FROM_EMAIL', 'PROXY_DOMAIN'] as const;
@@ -13,7 +12,6 @@ export namespace Emails {
 			throw new Error(`Missing required environment variable: ${varName}`);
 		}
 	}
-	sgMail.setApiKey(process.env.SENDGRID_API_KEY || '');
 
 	export const Email = new Struct({
 		name: 'email',
@@ -31,6 +29,14 @@ export namespace Emails {
 			emailId: text('email_id').notNull(),
 			url: text('url').notNull(),
 			clicks: integer('clicks').default(0).notNull()
+		}
+	});
+
+	const transporter = nodemailer.createTransport({
+		service: 'gmail',
+		auth: {
+			user: process.env.EMAIL_USER,
+			pass: process.env.EMAIL_PASS
 		}
 	});
 
@@ -88,6 +94,10 @@ export namespace Emails {
 		html?: string;
 	}) =>
 		attemptAsync(async () => {
+			if (!email.text && !email.html) {
+				throw new Error('Either text or html must be provided');
+			}
+
 			const parsed = EmailSchema.parse(email);
 			const createRes = await Email.new(
 				{
@@ -97,8 +107,8 @@ export namespace Emails {
 					text: 'text' in parsed ? parsed.text : '',
 					html: 'html' in parsed ? parsed.html : '',
 
-					created: new Date().toISOString(),
-					updated: new Date().toISOString(),
+					created: new Date(),
+					updated: new Date(),
 					archived: false,
 					canUpdate: false,
 					attributes: '[]',
@@ -110,29 +120,15 @@ export namespace Emails {
 				}
 			).unwrap();
 
-			const [response] = await sgMail.send({
+			await transporter.sendMail({
+				from: process.env.EMAIL_USER,
 				to: parsed.to,
-				from: String(process.env.SENDGRID_FROM_EMAIL),
 				subject: parsed.subject,
-				text: 'text' in parsed ? await trackLinks(parsed.text).unwrap() : '',
-				html: 'html' in parsed ? await trackLinks(parsed.html).unwrap() : ''
+				text: 'text' in parsed ? parsed.text : undefined,
+				html: 'html' in parsed ? (await trackLinks(parsed.html)).unwrap() : undefined
 			});
 
-			if (!response.statusCode.toString().startsWith('2')) {
-				Redis.emit('email:send', {
-					id: createRes.id,
-					message: 'Failed to send email',
-					status: 'error'
-				});
-
-				throw new Error('Failed to send email: ' + response.statusCode);
-			}
-
-			await Redis.emit('email:send', {
-				id: createRes.id,
-				message: 'Email sent successfully',
-				status: 'success'
-			}).unwrap();
+			return createRes;
 		});
 }
 

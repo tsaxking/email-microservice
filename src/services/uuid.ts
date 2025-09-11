@@ -1,4 +1,3 @@
-import { Redis } from './redis';
 import { z } from 'zod';
 
 class UUIDService {
@@ -14,19 +13,19 @@ class UUIDService {
 	}
 
 	async request() {
-		const res = await Redis.query(
-			process.env.UUID_SERVICE_NAME || 'uuidServiceQueue',
-			'reserve',
-			{
-				count: this.maxSize
-			},
-			z.array(z.string())
-		);
-		if (res.isErr()) {
-			console.error('Error reserving UUIDs:', res.error);
-			return;
-		}
-		this.cache.push(...res.value);
+		// const res = await Redis.query(
+		// 	process.env.UUID_SERVICE_NAME || 'uuidServiceQueue',
+		// 	'reserve',
+		// 	{
+		// 		count: this.maxSize
+		// 	},
+		// 	z.array(z.string())
+		// );
+		// if (res.isErr()) {
+		// 	console.error('Error reserving UUIDs:', res.error);
+		// 	return;
+		// }
+		// this.cache.push(...res.value);
 	}
 }
 
