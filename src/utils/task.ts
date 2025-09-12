@@ -18,7 +18,7 @@ export const runTask = (...args: string[]) => {
 	);
 };
 
-export const runTs = async (file: string, fn: string, ...params: unknown[]) => {
+export const runTs = (file: string, fn: string, ...params: unknown[]) => {
 	return attemptAsync(async () => {
 		const fullpath = path.join(process.cwd(), file);
 

@@ -45,13 +45,21 @@ export namespace Emails {
 			id: z.uuidv4(),
 			to: z.email(),
 			subject: z.string().min(1),
-			text: z.string().min(1)
+			text: z.string().min(1),
+			attachments: z.array(z.object({
+				filename: z.string().min(1),
+				path: z.string().min(1)
+			})).optional(),
 		}),
 		z.object({
 			id: z.uuidv4(),
 			to: z.email(),
 			subject: z.string().min(1),
-			html: z.string().min(1)
+			html: z.string().min(1),
+			attachments: z.array(z.object({
+				filename: z.string().min(1),
+				path: z.string().min(1)
+			})).optional(),
 		})
 	]);
 	export const parse = (data: string) => {
@@ -88,10 +96,11 @@ export namespace Emails {
 
 	export const send = (email: {
 		id: string;
-		to: string;
+		to: string | string[];
 		subject: string;
 		text?: string;
 		html?: string;
+		attachments?: { filename: string; path: string }[];
 	}) =>
 		attemptAsync(async () => {
 			if (!email.text && !email.html) {
@@ -125,7 +134,7 @@ export namespace Emails {
 				to: parsed.to,
 				subject: parsed.subject,
 				text: 'text' in parsed ? parsed.text : undefined,
-				html: 'html' in parsed ? (await trackLinks(parsed.html)).unwrap() : undefined
+				html: 'html' in parsed ? await trackLinks(parsed.html).unwrap() : undefined
 			});
 
 			return createRes;
