@@ -5,7 +5,7 @@ import { z } from 'zod';
 import nodemailer from 'nodemailer';
 
 export namespace Emails {
-	const requiredEnvVars = ['SENDGRID_API_KEY', 'SENDGRID_FROM_EMAIL', 'PROXY_DOMAIN'] as const;
+	const requiredEnvVars = ['PROXY_DOMAIN'] as const;
 
 	for (const varName of requiredEnvVars) {
 		if (!process.env[varName]) {
