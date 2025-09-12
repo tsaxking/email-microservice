@@ -37,7 +37,7 @@ type RedisEmail = {
 	to: string | string[];
 	subject: string;
 	attachments?: { filename: string; path: string }[];
-}
+};
 
 export const startWorker = () => {
 	const queue = redis.createQueue<RedisEmail>(
@@ -51,13 +51,13 @@ export const startWorker = () => {
 				.array(
 					z.object({
 						filename: z.string(),
-						path: z.string(), // full path
+						path: z.string() // full path
 					})
 				)
-				.optional(),
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				.optional()
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		}) as any,
-		Number(process.env.MAX_EMAIL_QUEUE) || 100,
+		Number(process.env.MAX_EMAIL_QUEUE) || 100
 	);
 
 	let kill = false;
@@ -76,10 +76,9 @@ export const startWorker = () => {
 			if (!item) continue;
 			console.log('Received job:', item);
 
-
 			const res = await Emails.send({
 				id: uuid(),
-				...item,
+				...item
 			});
 
 			if (res.isErr()) {
@@ -131,7 +130,7 @@ export const startServer = () => {
 	return () => {
 		// kill app
 		// app.close();
-	}
+	};
 };
 
 export const main = async () => {
@@ -142,7 +141,7 @@ export const main = async () => {
 	return () => {
 		stopServer();
 		stopWorker();
-	}
+	};
 };
 
 if (require.main === module) {

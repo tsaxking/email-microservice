@@ -46,20 +46,28 @@ export namespace Emails {
 			to: z.email(),
 			subject: z.string().min(1),
 			text: z.string().min(1),
-			attachments: z.array(z.object({
-				filename: z.string().min(1),
-				path: z.string().min(1)
-			})).optional(),
+			attachments: z
+				.array(
+					z.object({
+						filename: z.string().min(1),
+						path: z.string().min(1)
+					})
+				)
+				.optional()
 		}),
 		z.object({
 			id: z.uuidv4(),
 			to: z.email(),
 			subject: z.string().min(1),
 			html: z.string().min(1),
-			attachments: z.array(z.object({
-				filename: z.string().min(1),
-				path: z.string().min(1)
-			})).optional(),
+			attachments: z
+				.array(
+					z.object({
+						filename: z.string().min(1),
+						path: z.string().min(1)
+					})
+				)
+				.optional()
 		})
 	]);
 	export const parse = (data: string) => {
