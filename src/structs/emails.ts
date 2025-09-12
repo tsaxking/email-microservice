@@ -2,7 +2,9 @@ import { integer, text } from 'drizzle-orm/pg-core';
 import { Struct } from 'drizzle-struct/back-end';
 import { attemptAsync, attempt } from 'ts-utils/check';
 import { z } from 'zod';
+import { config } from 'dotenv';
 import nodemailer from 'nodemailer';
+config();
 
 export namespace Emails {
 	const requiredEnvVars = ['PROXY_DOMAIN'] as const;

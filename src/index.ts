@@ -1,4 +1,3 @@
-import { config } from 'dotenv';
 import express, { Request, Response } from 'express';
 import { Emails } from './structs/emails';
 import { Struct } from 'drizzle-struct/back-end';
@@ -9,7 +8,6 @@ import { sleep } from 'ts-utils/sleep';
 import { uuid } from './services/uuid';
 import { ComplexEventEmitter } from 'ts-utils/event-emitter';
 
-config();
 
 const eventEmitter = new ComplexEventEmitter<{
 	email: void;
@@ -143,10 +141,3 @@ export const main = async () => {
 		stopWorker();
 	};
 };
-
-if (require.main === module) {
-	main().catch((err) => {
-		console.error('Error starting email service:', err);
-		process.exit(1);
-	});
-}
