@@ -124,25 +124,22 @@ jobs:
           echo "Running premerge scripts"
           pnpm script premerge-render ${{ matrix.templates }} --force
 
-          echo "Cloning target repo"
-          git clone $REPOSITORY $CLONE_DIR
-          cd $CLONE_DIR
-
           echo "Configuring Git"
           git config user.email "taylorking206@u.boisestate.edu"
           git config user.name "Sveltekit Bot"
+          echo "Changing remote"
 
-          echo "Creating new branch from default branch"
-          git checkout main
-          git pull origin main
-          git checkout -b "$BRANCH_NAME"
+          # Change the remote to the repository we want to push to.
+          git remote rm origin
+          git remote add origin ${{ matrix.templates }}
 
-          echo "Copying changes from template repo"
-          # Assuming the GHA starts in the template repo root
-          # Use rsync to copy everything from parent dir except target-repo
-          rsync -av --exclude "target-repo" --exclude ".git" --exclude ".github/workflows/docs.yaml" ../ ./
+          echo "Checking out Branch: $BRANCH_NAME"
+          # Create a new feature branch for the changes.
+          git checkout -b $BRANCH_NAME
 
-          echo "Committing and pushing changes"
+          echo "Committing"
+          # Commit the changes and push the feature branch to origin
           git add .
-          git commit -m "chore: update scripts to $LATEST_TAG" || echo "No changes to commit"
-          git push origin "$BRANCH_NAME"
+          git commit -m "chore: update scripts to $LATEST_TAG"
+          git push origin --set-upstream $BRANCH_NAME
+
