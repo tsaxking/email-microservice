@@ -87,8 +87,8 @@ jobs:
           BRANCH_NAME="chore-update-scripts-to-$LATEST_TAG"
           CLONE_DIR="target-repo"
 
-          echo "Running premerge scripts"
-          pnpm script premerge-render ${{ matrix.templates }} --force
+          # echo "Running premerge scripts"
+          # pnpm script premerge-render ${{ matrix.templates }} --force
 
           echo "Configuring Git"
           git config user.email "taylorking206@u.boisestate.edu"
