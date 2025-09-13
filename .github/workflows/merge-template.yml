@@ -106,6 +106,6 @@ jobs:
           echo "Committing"
           # Commit the changes and push the feature branch to origin
           git add .
-          git commit -m "chore: update scripts to $LATEST_TAG"
+          git commit --allow-empty -m "chore: update scripts to $LATEST_TAG"
           git push origin --set-upstream $BRANCH_NAME
 
