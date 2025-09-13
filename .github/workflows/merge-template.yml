@@ -48,7 +48,8 @@ jobs:
             'git@github.com:tsaxking/uuid-microservice.git',
             'git@github.com:tsaxking/email-microservice.git',
             'git@github.com:tsaxking/discord-bot-microservice.git',
-            'git@github.com:tsaxking/ntp-microservice.git'
+            'git@github.com:tsaxking/ntp-microservice.git',
+            'git@github.com:TeamTators/tba-webhooks.git'
           ]
 
     steps:
