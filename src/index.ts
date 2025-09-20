@@ -73,7 +73,6 @@ export const startWorker = () => {
 
 			const [item] = job.value;
 			if (!item) continue;
-			console.log('Received job:', item);
 
 			const res = await Emails.send({
 				id: uuid(),
