@@ -25,8 +25,8 @@ export type EmailMessage = {
 };
 
 export const init = async () => {
-	await Struct.buildAll(DB);
-	await redis.init(1000);
+	await Struct.buildAll(DB).unwrap();
+	await redis.init(1000).unwrap();
 };
 
 type RedisEmail = {
@@ -38,8 +38,9 @@ type RedisEmail = {
 };
 
 export const startWorker = () => {
+	console.log('Starting email queue service');
 	const queue = redis.createQueue<RedisEmail>(
-		process.env.QUEUE_NAME || 'email_queue',
+		process.env.QUEUE_NAME || 'email-queue',
 		z.object({
 			html: z.string().optional(),
 			text: z.string().optional(),

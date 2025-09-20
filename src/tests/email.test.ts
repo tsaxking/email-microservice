@@ -31,20 +31,21 @@ describe('Email server integration', () => {
 		await redis.init(1000);
 
 		const service = redis.createQueue(
-			'email',
+			process.env.QUEUE_NAME || 'email-queue',
 			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			z.unknown() as any,
 			10
 		);
 
+		let success = false;
+
 		on('email', () => {
+			success = true;
 			console.log('Email sent successfully');
-			expect(true).toBe(true);
 		});
 
 		on('error', (err) => {
-			console.error('Error event received:', err);
-			expect(false).toBe(true);
+			throw err;
 		});
 
 		service.add({
@@ -54,6 +55,6 @@ describe('Email server integration', () => {
 		});
 
 		await sleep(5_000); // wait for 10 seconds to allow email to be sent
-		expect(true).toBe(true);
+		expect(success).toBe(true);
 	}, 10_000);
 });
