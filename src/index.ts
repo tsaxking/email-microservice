@@ -39,7 +39,7 @@ type RedisEmail = {
 
 export const startWorker = () => {
 	const queue = redis.createQueue<RedisEmail>(
-		'email',
+		process.env.QUEUE_NAME || 'email_queue',
 		z.object({
 			html: z.string().optional(),
 			text: z.string().optional(),
